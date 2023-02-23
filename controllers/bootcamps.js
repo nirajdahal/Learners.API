@@ -2,7 +2,6 @@ const Bootcamp = require("../models/Bootcamp")
 const asyncHandler = require('../middleware/async')
 const ErrorResponse = require("../utils/errorResponse")
 const geocoder = require("../utils/geoCoder")
-const { remove } = require("../models/Bootcamp")
 //@desc     Get all bootcamps
 //@route    GET /api/v1/bootcamps
 //@access   PUblic   
@@ -15,13 +14,12 @@ exports.getBootcamps = asyncHandler(async (req, res, next) => {
     const removeFields = ['select', 'sort', 'limit', 'page', 'zipcode', 'distance']
     //Loop over remove fields and delete them from req query
     removeFields.forEach(param => delete reqQuery[param])
-    console.log("REQ", reqQuery)
     //create query string
     let queryStr = JSON.stringify(reqQuery)
     // create operators like {$gt , $gte} etc
     queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
     //Finding resources
-    query = Bootcamp.find(JSON.parse(queryStr))
+    query = Bootcamp.find(JSON.parse(queryStr)).populate('courses')
     //Select fields
     if (req.query.select) {
         const fields = req.query.select.split(',').join(' ')
@@ -82,7 +80,7 @@ exports.getBootcamps = asyncHandler(async (req, res, next) => {
 //@route    GET /api/v1/bootcamps/:id 
 //@access   PUblic   
 exports.getBootcamp = asyncHandler(async (req, res, next) => {
-    const bootcamp = await Bootcamp.findById(req.params.id)
+    const bootcamp = await Bootcamp.findById(req.params.id).populate('courses')
     if (!bootcamp) {
         return next(new ErrorResponse(`Bootcamp with id of ${req.params.id} cannot be found`), 404)
     }
@@ -117,7 +115,7 @@ exports.deleteBootcamp = asyncHandler(async (req, res, next) => {
     if (!bootcamp) {
         return next(new ErrorResponse(`Bootcamp with id of ${req.params.id} cannot be found`), 404)
     }
-    await Bootcamp.findByIdAndDelete(req.params.id)
+    bootcamp.remove(req.params.id)
     res.status(200).json({ success: true, data: {} })
 })
 // @desc      Get bootcamps within a radius

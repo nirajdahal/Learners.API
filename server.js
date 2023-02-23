@@ -12,6 +12,7 @@ dotenv.config({ path: './config/config.env' })
 connectDb()
 //route files
 const bootcamps = require('./routes/bootcamps')
+const courses = require('./routes/courses')
 const app = express()
 app.use(cors({
     origin: 'http://localhost:3000'
@@ -27,6 +28,7 @@ if (process.env.NODE_ENV) {
 //app.use(logger)
 //mount routes
 app.use('/api/v1/bootcamps', bootcamps)
+app.use('/api/v1/courses', courses)
 app.use(errorHandler)
 const PORT = process.env.PORT || 5000
 const server = app.listen(PORT, () => console.log(`Server app listening on port ${PORT}!`))
