@@ -1,3 +1,4 @@
+const geocoder = require("../utils/geoCoder");
 const advancedResults = (model, populate) => async (req, res, next) => {
     let query;
     // Copy req.query
@@ -24,12 +25,28 @@ const advancedResults = (model, populate) => async (req, res, next) => {
     } else {
         query = query.sort('-createdAt');
     }
+    if (req.query.zipcode && req.query.distance) {
+        // Get lat/lng from geocoder
+        const loc = await geocoder.geocode(req.query.zipcode);
+        const lat = loc[0].latitude;
+        const lng = loc[0].longitude;
+        // Calc radius using radians
+        // Divide dist by radius of Earth
+        // Earth Radius = 3,963 mi / 6,378 km
+        const radius = req.query.distance / 3963;
+        query = query.find({
+            location: { $geoWithin: { $centerSphere: [[lng, lat], radius] } }
+        });
+    }
     // Pagination
     const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 25;
+    const limit = parseInt(req.query.limit, 10) || 5;
+    console.log("page", page)
+    console.log("limit", limit)
     const startIndex = (page - 1) * limit;
     const endIndex = page * limit;
     const total = await model.countDocuments();
+    console.log("total", total)
     query = query.skip(startIndex).limit(limit);
     if (populate) {
         query = query.populate(populate);
@@ -37,7 +54,7 @@ const advancedResults = (model, populate) => async (req, res, next) => {
     // Executing query
     const results = await query;
     // Pagination result
-    const pagination = {};
+    let pagination = {};
     if (endIndex < total) {
         pagination.next = {
             page: page + 1,
@@ -49,7 +66,9 @@ const advancedResults = (model, populate) => async (req, res, next) => {
             page: page - 1,
             limit
         };
+        console.log("pagination", pagination)
     }
+    console.log(pagination)
     res.advancedResults = {
         success: true,
         count: results.length,

@@ -1,4 +1,6 @@
 const express = require('express')
+const path = require('path')
+const fileUpload = require('express-fileupload')
 const dotenv = require('dotenv')
 const logger = require('./middleware/logger')
 const morgan = require('morgan')
@@ -26,6 +28,9 @@ if (process.env.NODE_ENV) {
     app.use(morgan('dev'))
 }
 //app.use(logger)
+app.use(fileUpload());
+//Set static folder
+app.use(express.static(path.join(__dirname, 'public')))
 //mount routes
 app.use('/api/v1/bootcamps', bootcamps)
 app.use('/api/v1/courses', courses)
